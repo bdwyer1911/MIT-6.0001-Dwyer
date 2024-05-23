@@ -57,6 +57,9 @@ def process(url):
 # Problem 1
 
 class NewsStory(object):
+    '''
+    Creates a NewsStory object
+    '''
     def __init__(self, guid, title, description, link, pubdate):
         self.guid = guid
         self.title = title
@@ -172,11 +175,13 @@ class PhraseTrigger(Trigger):
 # Problem 3
 class TitleTrigger(PhraseTrigger):
     def evaluate(self, story):
+        #checks if the phrase we're looking for is in the title of the news story
         return self.is_phrase_in(story.get_title())
 
 # Problem 4
 class DescriptionTrigger(PhraseTrigger):
     def evaluate(self, story):
+        #checks if the phrase we're looking for is in the description of the news story
         return self.is_phrase_in(story.get_description())
     
 
@@ -187,6 +192,7 @@ class DescriptionTrigger(PhraseTrigger):
 
 class TimeTrigger(Trigger):
     def __init__(self,pubtime):
+        #sets the pubtime variable to the proper datetime format in EST
         pubtime = datetime.strptime(pubtime, '%d %b %Y %H:%M:%S')
         pubtime = pubtime.replace(tzinfo=pytz.timezone("EST"))
         self.pubtime = pubtime
@@ -195,10 +201,12 @@ class TimeTrigger(Trigger):
 # TODO: BeforeTrigger and AfterTrigger
 class BeforeTrigger(TimeTrigger):
     def evaluate(self, story):
+        #returns true if the story was published before the inputted pubtime
         return self.pubtime > story.get_pubdate().replace(tzinfo=pytz.timezone("EST"))
 
 class AfterTrigger(TimeTrigger):
     def evaluate(self, story):
+        #returns true if the story was published after the inputted pubtime
         return self.pubtime < story.get_pubdate().replace(tzinfo=pytz.timezone("EST"))
 
 
@@ -270,12 +278,47 @@ def read_trigger_config(filename):
         line = line.rstrip()
         if not (len(line) == 0 or line.startswith('//')):
             lines.append(line)
+    
+    # for line in lines:
+    #     print(line)
 
     # TODO: Problem 11
     # line is the list of lines that you need to parse and for which you need
     # to build triggers
 
-    print(lines) # for now, print it so you see what it contains!
+    #create a dictionary mapping strings to the proper trigger classes
+    triggerMap = {
+        "TITLE": TitleTrigger,
+        "DESCRIPTION": DescriptionTrigger,
+        "AFTER": AfterTrigger,
+        "BEFORE": BeforeTrigger,
+        "AND": AndTrigger,
+        "OR": OrTrigger
+    }
+
+    #initialize an empty dictionary and list
+    triggerDict = {}
+    triggerList = []
+
+    #parse through the text file lines
+    for line in lines:
+        trigger = line.split(',') #split each line into a list of strings
+        
+        #if it's 'and' or 'or', we'll need to get the newstory instances from the dictionary
+        if trigger[1] == 'AND' or trigger[1] == 'OR':
+            #append the proper trigger object to the list by finding the correct info in our triggerdict
+            triggerList.append(triggerMap[trigger[1]](triggerDict[trigger[2]], triggerDict[trigger[3]]))
+        else:
+            #add the newstory objects to the trigger dict. Will need thise for 'ands' and 'ors'
+            triggerDict[trigger[0]] = triggerMap[trigger[1]](trigger[2])
+
+            #append the trigger obhect to the list
+            triggerList.append(triggerDict[trigger[0]])
+            
+    
+    #return the list
+    return triggerList
+        
 
 
 
@@ -287,7 +330,7 @@ def main_thread(master):
     try:
         t1 = TitleTrigger("election")
         t2 = DescriptionTrigger("Trump")
-        t3 = DescriptionTrigger("Clinton")
+        t3 = DescriptionTrigger("Biden")
         t4 = AndTrigger(t2, t3)
         triggerlist = [t1, t4]
 
@@ -348,7 +391,7 @@ if __name__ == '__main__':
     os.chdir('C:\\Users\\bdwye\\Documents\\Python Scripts\\MIT Homework Assignments\\Problem Set 5\\')
     cwd = os.getcwd()  # Get the current working directory (cwd)
     files = os.listdir(cwd)  # Get all the files in that directory
-    print("Files in %r: %s" % (cwd, files))
+    # print("Files in %r: %s" % (cwd, files))
     # os.chdir('C:\\Users\\bdwye\\Documents\\Python Scripts\\MIT Homework Assignments\\Problem Set 5\\')
     # print(os.getcwd())
     root = Tk()
